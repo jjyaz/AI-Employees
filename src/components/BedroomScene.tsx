@@ -62,20 +62,22 @@ export default function BedroomScene() {
         gl={{ antialias: true, alpha: false }}
         dpr={[1, 1.5]}
       >
-        <color attach="background" args={['#0a0e1a']} />
-        <fog attach="fog" args={['#0a0e1a', 10, 25]} />
+        <color attach="background" args={['#b8d4f0']} />
+        <fog attach="fog" args={['#b8d4f0', 12, 30]} />
         
         <Suspense fallback={null}>
-          <ambientLight intensity={0.15} color="#4466aa" />
+          <ambientLight intensity={0.8} color="#fffaf0" />
           <directionalLight
-            position={[3, 8, -2]}
-            intensity={0.3}
-            color="#8899cc"
+            position={[4, 8, 3]}
+            intensity={1.5}
+            color="#fff8e7"
             castShadow
             shadow-mapSize={[1024, 1024]}
           />
-          {/* Moonlight */}
-          <directionalLight position={[-4, 6, 2]} intensity={0.2} color="#aabbee" />
+          {/* Fill light */}
+          <directionalLight position={[-4, 6, 2]} intensity={0.6} color="#e0e8ff" />
+          {/* Bounce light from floor */}
+          <hemisphereLight args={['#87ceeb', '#c4a882', 0.4]} />
 
           <Room />
 
