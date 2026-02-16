@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useGLTF } from '@react-three/drei';
 import type { BeamState } from '../BedroomScene';
 
 const BEAM_COLORS: Record<BeamState, string> = {
@@ -14,6 +15,7 @@ export function CenterHub({ beamState, onClick }: { beamState: BeamState; onClic
   const ringRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.PointLight>(null);
   const innerRef = useRef<THREE.Mesh>(null);
+  const { scene } = useGLTF('/models/center-item.glb');
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -63,6 +65,9 @@ export function CenterHub({ beamState, onClick }: { beamState: BeamState; onClic
           opacity={0.5}
         />
       </mesh>
+
+      {/* 3D model in center */}
+      <primitive object={scene} position={[0, 0.05, 0]} scale={0.5} />
 
       <pointLight ref={glowRef} position={[0, 0.5, 0]} color={color} intensity={0.5} distance={5} />
     </group>
