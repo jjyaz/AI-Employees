@@ -212,3 +212,128 @@
   border-color: hsl(var(--neural-blue) / 0.5);
   color: hsl(var(--neural-blue));
 }
+
+/* CEO Task Mode */
+.ceo-modal {
+  background: hsl(var(--card) / 0.92);
+  backdrop-filter: blur(24px);
+  border: 1px solid hsl(40 80% 50% / 0.25);
+  border-radius: 16px;
+  box-shadow: 0 0 60px hsl(40 80% 50% / 0.08), 0 12px 48px hsl(var(--background) / 0.6);
+}
+
+.ceo-title-glow {
+  text-shadow: 0 0 12px hsl(40 80% 55% / 0.5), 0 0 30px hsl(40 80% 55% / 0.15);
+}
+
+.ceo-icon-ring {
+  @apply w-9 h-9 rounded-full flex items-center justify-center;
+  background: hsl(40 80% 50% / 0.12);
+  border: 1px solid hsl(40 80% 50% / 0.3);
+  box-shadow: 0 0 16px hsl(40 80% 50% / 0.15);
+}
+
+.ceo-label {
+  @apply block text-[9px] tracking-wider uppercase mb-1.5;
+  font-family: 'Orbitron', sans-serif;
+  color: hsl(var(--muted-foreground));
+}
+
+.ceo-textarea {
+  @apply w-full rounded-lg px-3 py-2.5 text-xs leading-relaxed resize-none outline-none;
+  background: hsl(var(--muted) / 0.3);
+  border: 1px solid hsl(var(--border) / 0.3);
+  color: hsl(var(--foreground));
+}
+.ceo-textarea:focus {
+  border-color: hsl(40 80% 50% / 0.4);
+  box-shadow: 0 0 12px hsl(40 80% 50% / 0.1);
+}
+.ceo-textarea::placeholder { color: hsl(var(--muted-foreground) / 0.4); }
+
+.ceo-select, .ceo-input {
+  @apply w-full rounded-lg px-3 py-2 text-xs outline-none;
+  background: hsl(var(--muted) / 0.3);
+  border: 1px solid hsl(var(--border) / 0.3);
+  color: hsl(var(--foreground));
+}
+.ceo-select:focus, .ceo-input:focus {
+  border-color: hsl(40 80% 50% / 0.4);
+}
+
+.ceo-depth-card {
+  @apply p-2.5 rounded-lg text-center cursor-pointer transition-all duration-200;
+  background: hsl(var(--muted) / 0.2);
+  border: 1px solid hsl(var(--border) / 0.2);
+}
+.ceo-depth-card:hover { border-color: hsl(40 80% 50% / 0.3); }
+.ceo-depth-active {
+  background: hsl(40 80% 50% / 0.1) !important;
+  border-color: hsl(40 80% 50% / 0.5) !important;
+  box-shadow: 0 0 12px hsl(40 80% 50% / 0.1);
+}
+
+.ceo-toggle-chip {
+  @apply px-3 py-1.5 rounded-lg text-[9px] tracking-wider uppercase cursor-pointer transition-all;
+  font-family: 'Orbitron', sans-serif;
+  background: hsl(var(--muted) / 0.2);
+  border: 1px solid hsl(var(--border) / 0.2);
+  color: hsl(var(--muted-foreground));
+}
+.ceo-toggle-active {
+  background: hsl(40 80% 50% / 0.12) !important;
+  border-color: hsl(40 80% 50% / 0.4) !important;
+  color: hsl(40 80% 60%) !important;
+}
+
+.ceo-toggle-label { cursor: pointer; }
+
+.ceo-engage-btn {
+  @apply w-full py-3 rounded-lg text-xs tracking-widest uppercase font-semibold cursor-pointer transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed;
+  font-family: 'Orbitron', sans-serif;
+  background: linear-gradient(135deg, hsl(40 80% 50% / 0.2), hsl(40 60% 40% / 0.15));
+  border: 1px solid hsl(40 80% 50% / 0.4);
+  color: hsl(40 80% 65%);
+  box-shadow: 0 0 20px hsl(40 80% 50% / 0.1);
+}
+.ceo-engage-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, hsl(40 80% 50% / 0.3), hsl(40 60% 40% / 0.25));
+  box-shadow: 0 0 30px hsl(40 80% 50% / 0.2);
+  transform: translateY(-1px);
+}
+
+.ceo-execution-panel {
+  background: hsl(var(--card) / 0.88);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(40 80% 50% / 0.2);
+  border-radius: 14px;
+  box-shadow: 0 0 40px hsl(40 80% 50% / 0.06), 0 8px 32px hsl(var(--background) / 0.5);
+}
+
+.ceo-agent-card {
+  @apply p-2 rounded-lg transition-all;
+  background: hsl(var(--muted) / 0.15);
+  border: 1px solid hsl(var(--border) / 0.15);
+}
+.ceo-agent-active {
+  border-color: hsl(40 80% 50% / 0.3) !important;
+  box-shadow: 0 0 12px hsl(40 80% 50% / 0.08);
+}
+
+.ceo-phase-bar-active {
+  background: linear-gradient(90deg, hsl(40 80% 50% / 0.6), hsl(40 80% 50% / 0.3));
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.top-bar-btn-ceo {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(40 80% 50% / 0.3);
+  color: hsl(40 80% 60%);
+  text-shadow: 0 0 8px hsl(40 80% 50% / 0.3);
+}
+.top-bar-btn-ceo:hover {
+  background: hsl(40 80% 50% / 0.12);
+  border-color: hsl(40 80% 50% / 0.5);
+  box-shadow: 0 0 16px hsl(40 80% 50% / 0.15);
+}
