@@ -15,6 +15,7 @@ import { ConnectionsPanel } from './panels/ConnectionsPanel';
 import { IntegrationsPanel } from './panels/IntegrationsPanel';
 import { CEOTaskModal } from './panels/CEOTaskModal';
 import { CEOExecutionPanel } from './panels/CEOExecutionPanel';
+import { CEOSettingsPanel } from './panels/CEOSettingsPanel';
 import { UseCaseLibrary } from './panels/UseCaseLibrary';
 import { Stars } from '@react-three/drei';
 import type { AgentId, AgentEvent } from '@/lib/agents';
@@ -69,6 +70,7 @@ export default function BedroomScene() {
 
   // CEO Task Mode state
   const [ceoModalOpen, setCeoModalOpen] = useState(false);
+  const [ceoSettingsOpen, setCeoSettingsOpen] = useState(false);
   const [ceoState, setCeoState] = useState<CEOState | null>(null);
   const ceoEngineRef = useRef<CEOSwarmEngine | null>(null);
 
@@ -156,8 +158,7 @@ export default function BedroomScene() {
     engine.run(config);
   }, []);
 
-  const handleCEOPause = useCallback(() => ceoEngineRef.current?.pause(), []);
-  const handleCEOResume = useCallback(() => ceoEngineRef.current?.resume(), []);
+  // No pause/resume for backend-driven runs
   const handleCEOAbort = useCallback(() => ceoEngineRef.current?.abort(), []);
   const handleCEOClose = useCallback(() => setCeoState(null), []);
 
@@ -232,6 +233,9 @@ export default function BedroomScene() {
             streamDone={tvStreamDone}
             agentEvents={agentEvents}
             primaryAgent={primaryAgent}
+            ceoActive={!!ceoState && !['idle', 'complete', 'aborted'].includes(ceoState.phase)}
+            ceoPhase={ceoState?.phase}
+            ceoEvents={ceoState?.ceoEvents}
           />
 
           {/* Connection Dock - hardware rack near TV */}
@@ -303,14 +307,18 @@ export default function BedroomScene() {
         isOpen={ceoModalOpen}
         onClose={() => setCeoModalOpen(false)}
         onEngage={handleCEOEngage}
+        onOpenSettings={() => { setCeoModalOpen(false); setCeoSettingsOpen(true); }}
+        gatewayStatus="connected"
+      />
+      <CEOSettingsPanel
+        isOpen={ceoSettingsOpen}
+        onClose={() => setCeoSettingsOpen(false)}
       />
 
       {/* CEO Execution Panel */}
       {ceoState && (
         <CEOExecutionPanel
           state={ceoState}
-          onPause={handleCEOPause}
-          onResume={handleCEOResume}
           onAbort={handleCEOAbort}
           onClose={handleCEOClose}
         />

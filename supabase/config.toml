@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.workflow-runner]
 verify_jwt = false
+
+[functions.ceo-orchestrator]
+verify_jwt = false

@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      ceo_runs: {
+        Row: {
+          agent_outputs: Json | null
+          agents: string[]
+          budgets: Json
+          completed_at: string | null
+          created_at: string
+          device_id: string | null
+          error: string | null
+          events: Json[] | null
+          final_output: string | null
+          goal: string
+          id: string
+          mode: string
+          model: string
+          phase: string
+          review_output: string | null
+          started_at: string | null
+          status: string
+          task_plan: Json | null
+          tool_permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          agent_outputs?: Json | null
+          agents?: string[]
+          budgets?: Json
+          completed_at?: string | null
+          created_at?: string
+          device_id?: string | null
+          error?: string | null
+          events?: Json[] | null
+          final_output?: string | null
+          goal: string
+          id?: string
+          mode?: string
+          model?: string
+          phase?: string
+          review_output?: string | null
+          started_at?: string | null
+          status?: string
+          task_plan?: Json | null
+          tool_permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          agent_outputs?: Json | null
+          agents?: string[]
+          budgets?: Json
+          completed_at?: string | null
+          created_at?: string
+          device_id?: string | null
+          error?: string | null
+          events?: Json[] | null
+          final_output?: string | null
+          goal?: string
+          id?: string
+          mode?: string
+          model?: string
+          phase?: string
+          review_output?: string | null
+          started_at?: string | null
+          status?: string
+          task_plan?: Json | null
+          tool_permissions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       memory_vault: {
         Row: {
           content: string

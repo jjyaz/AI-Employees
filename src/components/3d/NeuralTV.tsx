@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { BeamState, FocusTarget } from '../BedroomScene';
 import type { AgentId, AgentEvent } from '@/lib/agents';
+import type { CEOEvent } from '@/lib/ceoSwarm';
 
 interface NeuralTVProps {
   focusTarget: FocusTarget;
@@ -11,6 +12,9 @@ interface NeuralTVProps {
   streamDone?: boolean;
   agentEvents?: AgentEvent[];
   primaryAgent?: AgentId | null;
+  ceoActive?: boolean;
+  ceoPhase?: string;
+  ceoEvents?: CEOEvent[];
 }
 
 // AI-specific screen color schemes
@@ -21,9 +25,10 @@ const AI_COLORS: Record<string, { primary: string; secondary: string; bg: string
   desk4: { primary: '#8b5cf6', secondary: '#a78bfa', bg: '#140c1c' }, // Raspberry Pi - purple network
 };
 
-function TVVisualization({ focusTarget, beamState, streamContent, streamDone, agentEvents }: {
+function TVVisualization({ focusTarget, beamState, streamContent, streamDone, agentEvents, ceoActive, ceoPhase, ceoEvents }: {
   focusTarget: FocusTarget; beamState: BeamState;
   streamContent?: string; streamDone?: boolean; agentEvents?: AgentEvent[];
+  ceoActive?: boolean; ceoPhase?: string; ceoEvents?: CEOEvent[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
@@ -48,8 +53,10 @@ function TVVisualization({ focusTarget, beamState, streamContent, streamDone, ag
 
     ctx.clearRect(0, 0, w, h);
 
-    // If we have streaming content, show it as live telemetry
-    if (streamContent && !streamDone) {
+    // CEO Telemetry Mode takes priority
+    if (ceoActive) {
+      drawCEOTelemetryMode(ctx, w, h, t, ceoPhase || 'idle', ceoEvents || []);
+    } else if (streamContent && !streamDone) {
       drawStreamingMode(ctx, w, h, t, streamContent, agentEvents);
     } else if (streamContent && streamDone) {
       drawResultMode(ctx, w, h, t, streamContent);
@@ -72,14 +79,89 @@ function TVVisualization({ focusTarget, beamState, streamContent, streamDone, ag
   return textureRef.current ? (
     <meshStandardMaterial
       map={textureRef.current}
-      emissive="#ffffff"
+      emissive={ceoActive ? "#d4a017" : "#ffffff"}
       emissiveMap={textureRef.current}
-      emissiveIntensity={0.6}
+      emissiveIntensity={ceoActive ? 0.8 : 0.6}
       toneMapped={false}
     />
   ) : (
     <meshStandardMaterial color="#111" />
   );
+}
+
+function drawCEOTelemetryMode(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, phase: string, events: CEOEvent[]) {
+  ctx.fillStyle = '#0a0810';
+  ctx.fillRect(0, 0, w, h);
+
+  // Gold header bar
+  const goldAlpha = 0.6 + Math.sin(t * 3) * 0.15;
+  ctx.fillStyle = `rgba(212, 160, 23, ${goldAlpha})`;
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('⚡ KIMICLAW CEO TASK ACTIVE', w / 2, 16);
+
+  // Phase timeline bar
+  const phases = ['A', 'B', 'C', 'D'];
+  const phaseMap: Record<string, number> = { 'strategic-breakdown': 0, 'parallel-work': 1, 'internal-review': 2, 'consolidation': 3, 'complete': 4 };
+  const currentIdx = phaseMap[phase] ?? -1;
+  const barY = 26;
+  const barW = (w - 40) / 4;
+
+  phases.forEach((p, i) => {
+    const x = 20 + i * barW;
+    const done = i < currentIdx || phase === 'complete';
+    const active = i === currentIdx;
+    ctx.fillStyle = done ? 'rgba(16, 185, 129, 0.6)' : active ? `rgba(212, 160, 23, ${0.4 + Math.sin(t * 4) * 0.2})` : 'rgba(100, 100, 100, 0.15)';
+    ctx.fillRect(x, barY, barW - 4, 4);
+    ctx.fillStyle = done ? 'rgba(16, 185, 129, 0.8)' : active ? 'rgba(212, 160, 23, 0.8)' : 'rgba(100, 100, 100, 0.3)';
+    ctx.font = '7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(p, x + barW / 2, barY + 14);
+  });
+
+  // Worker panels (4 quadrants)
+  const agentColors = ['#3b82f6', '#ef4444', '#10b981', '#8b5cf6'];
+  const agentNames = ['KIMI', 'CLAW', 'MAC', 'PI'];
+  const panelW = (w - 30) / 4;
+  const panelY = 48;
+
+  agentNames.forEach((name, i) => {
+    const px = 10 + i * (panelW + 2);
+    ctx.strokeStyle = `${agentColors[i]}40`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px, panelY, panelW, 35);
+    ctx.fillStyle = `${agentColors[i]}30`;
+    ctx.font = '7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, px + panelW / 2, panelY + 12);
+
+    // Activity indicator
+    const active = events.some(e => e.actor.toLowerCase().includes(name.toLowerCase().slice(0, 3)));
+    if (active) {
+      const pulseR = 3 + Math.sin(t * 5 + i) * 1.5;
+      ctx.beginPath();
+      ctx.arc(px + panelW / 2, panelY + 25, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = `${agentColors[i]}80`;
+      ctx.fill();
+    }
+  });
+
+  // Event stream
+  ctx.textAlign = 'left';
+  ctx.font = '8px monospace';
+  const recent = events.slice(-8);
+  recent.forEach((ev, i) => {
+    const alpha = 0.3 + (i / 8) * 0.5;
+    const isError = ev.type === 'error';
+    ctx.fillStyle = isError ? `rgba(239, 68, 68, ${alpha})` : ev.type === 'phase' ? `rgba(212, 160, 23, ${alpha})` : `rgba(200, 200, 220, ${alpha})`;
+    ctx.fillText(`▸ ${ev.safeTrace.slice(0, 55)}`, 10, 95 + i * 14);
+  });
+
+  // Scan line effect
+  const scanY = (t * 60) % h;
+  ctx.fillStyle = 'rgba(212, 160, 23, 0.03)';
+  ctx.fillRect(0, scanY, w, 2);
+  ctx.textAlign = 'start';
 }
 
 function drawStreamingMode(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, content: string, events?: any[]) {
@@ -500,7 +582,7 @@ function drawCollectiveMode(ctx: CanvasRenderingContext2D, w: number, h: number,
   ctx.textAlign = 'start';
 }
 
-export function NeuralTV({ focusTarget, beamState, streamContent, streamDone, agentEvents, primaryAgent }: NeuralTVProps) {
+export function NeuralTV({ focusTarget, beamState, streamContent, streamDone, agentEvents, primaryAgent, ceoActive, ceoPhase, ceoEvents }: NeuralTVProps) {
   const backlightRef = useRef<THREE.PointLight>(null);
   const frameGlowRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -511,7 +593,8 @@ export function NeuralTV({ focusTarget, beamState, streamContent, streamDone, ag
       const targetIntensity = isActive ? 2.5 + Math.sin(t * 2) * 0.5 : 1.2 + Math.sin(t) * 0.3;
       backlightRef.current.intensity += (targetIntensity - backlightRef.current.intensity) * 0.05;
 
-      if (beamState === 'processing') backlightRef.current.color.set('#ef4444');
+      if (ceoActive) backlightRef.current.color.set('#d4a017');
+      else if (beamState === 'processing') backlightRef.current.color.set('#ef4444');
       else if (beamState === 'success') backlightRef.current.color.set('#10b981');
       else if (beamState === 'collaboration') backlightRef.current.color.set('#8b5cf6');
       else backlightRef.current.color.set('#3b82f6');
@@ -545,7 +628,7 @@ export function NeuralTV({ focusTarget, beamState, streamContent, streamDone, ag
       {/* Screen */}
       <mesh position={[0, 0, 0.045]}>
         <planeGeometry args={[4.2, 2.3]} />
-        <TVVisualization focusTarget={focusTarget} beamState={beamState} streamContent={streamContent} streamDone={streamDone} agentEvents={agentEvents} />
+        <TVVisualization focusTarget={focusTarget} beamState={beamState} streamContent={streamContent} streamDone={streamDone} agentEvents={agentEvents} ceoActive={ceoActive} ceoPhase={ceoPhase} ceoEvents={ceoEvents} />
       </mesh>
 
       {/* LED backlight glow */}
