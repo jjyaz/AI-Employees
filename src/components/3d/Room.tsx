@@ -1,10 +1,21 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useCloudWallMaterial } from './CloudWallMaterial';
+import type { BeamState } from '../BedroomScene';
 
-export function Room() {
+interface RoomProps {
+  beamState?: BeamState;
+}
+
+export function Room({ beamState = 'idle' }: RoomProps) {
   const ledRef = useRef<THREE.PointLight>(null);
   const ledRef2 = useRef<THREE.PointLight>(null);
+
+  const { material: backWall } = useCloudWallMaterial({ beamState, driftDirection: 1.0 });
+  const { material: leftWall } = useCloudWallMaterial({ beamState, driftDirection: -0.8 });
+  const { material: rightWall } = useCloudWallMaterial({ beamState, driftDirection: 1.2 });
+  const { material: frontWall } = useCloudWallMaterial({ beamState, driftDirection: -1.0 });
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -24,22 +35,28 @@ export function Room() {
         <meshStandardMaterial color="#c4a882" roughness={0.7} metalness={0.05} />
       </mesh>
 
-      {/* Back wall - soft light */}
+      {/* Back wall - cloud sky */}
       <mesh position={[0, 3, -5.5]} receiveShadow>
         <planeGeometry args={[12, 6]} />
-        <meshStandardMaterial color="#d4dce8" roughness={0.9} />
+        {backWall}
       </mesh>
 
-      {/* Left wall */}
+      {/* Left wall - cloud sky */}
       <mesh position={[-5.5, 3, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[12, 6]} />
-        <meshStandardMaterial color="#cdd6e4" roughness={0.9} />
+        {leftWall}
       </mesh>
 
-      {/* Right wall with window */}
+      {/* Right wall - cloud sky */}
       <mesh position={[5.5, 3, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[12, 6]} />
-        <meshStandardMaterial color="#cdd6e4" roughness={0.9} />
+        {rightWall}
+      </mesh>
+
+      {/* Front wall (behind camera) - cloud sky */}
+      <mesh position={[0, 3, 5.5]} rotation={[0, Math.PI, 0]} receiveShadow>
+        <planeGeometry args={[12, 6]} />
+        {frontWall}
       </mesh>
 
       {/* Window - bright sky */}
@@ -48,17 +65,16 @@ export function Room() {
           <planeGeometry args={[3, 2.2]} />
           <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.8} />
         </mesh>
-        {/* Sunlight through window */}
         <pointLight position={[0, 0, 0.5]} color="#fff5e0" intensity={4} distance={12} decay={2} />
       </group>
 
-      {/* Ceiling - white */}
+      {/* Ceiling */}
       <mesh position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[12, 12]} />
         <meshStandardMaterial color="#e8ecf0" roughness={1} />
       </mesh>
 
-      {/* RGB LED strips along ceiling edges */}
+      {/* RGB LED strips */}
       <pointLight ref={ledRef} position={[-5, 5.8, -5]} color="#3b82f6" intensity={0.8} distance={8} />
       <pointLight ref={ledRef2} position={[5, 5.8, 5]} color="#8b5cf6" intensity={0.7} distance={8} />
       <pointLight position={[-5, 5.8, 5]} color="#06b6d4" intensity={0.5} distance={8} />

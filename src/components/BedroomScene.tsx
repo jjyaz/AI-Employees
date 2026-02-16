@@ -125,7 +125,7 @@ export default function BedroomScene() {
           <directionalLight position={[-4, 6, 2]} intensity={0.6} color="#e0e8ff" />
           <hemisphereLight args={['#87ceeb', '#c4a882', 0.4]} />
 
-          <Room />
+          <Room beamState={beamState} />
           <NeuralTV
             focusTarget={focusTarget}
             beamState={beamState}
