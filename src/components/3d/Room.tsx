@@ -1,65 +1,64 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useCloudWallMaterial } from './CloudWallMaterial';
+import { useCloudWallMaterial, type CloudState } from './CloudWallMaterial';
 import type { BeamState } from '../BedroomScene';
 
 interface RoomProps {
   beamState?: BeamState;
+  cloudState?: CloudState;
+  starIntensity?: number;
 }
 
-export function Room({ beamState = 'idle' }: RoomProps) {
+export function Room({ beamState = 'idle', cloudState = 'idle', starIntensity = 0 }: RoomProps) {
   const ledRef = useRef<THREE.PointLight>(null);
   const ledRef2 = useRef<THREE.PointLight>(null);
 
-  const { material: backWall } = useCloudWallMaterial({ beamState, driftDirection: 1.0 });
-  const { material: leftWall } = useCloudWallMaterial({ beamState, driftDirection: -0.8 });
-  const { material: rightWall } = useCloudWallMaterial({ beamState, driftDirection: 1.2 });
-  const { material: frontWall } = useCloudWallMaterial({ beamState, driftDirection: -1.0 });
+  const wallProps = { beamState, cloudState, starIntensity };
+  const { material: backWall } = useCloudWallMaterial({ ...wallProps, driftDirection: 1.0 });
+  const { material: leftWall } = useCloudWallMaterial({ ...wallProps, driftDirection: -0.8 });
+  const { material: rightWall } = useCloudWallMaterial({ ...wallProps, driftDirection: 1.2 });
+  const { material: frontWall } = useCloudWallMaterial({ ...wallProps, driftDirection: -1.0 });
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    if (ledRef.current) {
-      ledRef.current.intensity = 0.8 + Math.sin(t * 0.5) * 0.2;
-    }
-    if (ledRef2.current) {
-      ledRef2.current.intensity = 0.7 + Math.sin(t * 0.7 + 1) * 0.2;
-    }
+    if (ledRef.current) ledRef.current.intensity = 0.8 + Math.sin(t * 0.5) * 0.2;
+    if (ledRef2.current) ledRef2.current.intensity = 0.7 + Math.sin(t * 0.7 + 1) * 0.2;
   });
 
   return (
     <group>
-      {/* Floor - light wood */}
+      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[12, 12]} />
         <meshStandardMaterial color="#c4a882" roughness={0.7} metalness={0.05} />
       </mesh>
 
-      {/* Back wall - cloud sky */}
+      {/* Back wall */}
       <mesh position={[0, 3, -5.5]} receiveShadow>
         <planeGeometry args={[12, 6]} />
         {backWall}
       </mesh>
 
-      {/* Left wall - cloud sky */}
+      {/* Left wall */}
       <mesh position={[-5.5, 3, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[12, 6]} />
         {leftWall}
       </mesh>
 
-      {/* Right wall - cloud sky */}
+      {/* Right wall */}
       <mesh position={[5.5, 3, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[12, 6]} />
         {rightWall}
       </mesh>
 
-      {/* Front wall (behind camera) - cloud sky */}
+      {/* Front wall */}
       <mesh position={[0, 3, 5.5]} rotation={[0, Math.PI, 0]} receiveShadow>
         <planeGeometry args={[12, 6]} />
         {frontWall}
       </mesh>
 
-      {/* Window - bright sky */}
+      {/* Window */}
       <group position={[5.49, 3.5, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <mesh>
           <planeGeometry args={[3, 2.2]} />
@@ -80,7 +79,6 @@ export function Room({ beamState = 'idle' }: RoomProps) {
       <pointLight position={[-5, 5.8, 5]} color="#06b6d4" intensity={0.5} distance={8} />
       <pointLight position={[5, 5.8, -5]} color="#3b82f6" intensity={0.5} distance={8} />
 
-      {/* LED strip meshes */}
       {[[-5.4, 5.9, 0], [5.4, 5.9, 0]].map((pos, i) => (
         <mesh key={`led-h-${i}`} position={pos as [number, number, number]}>
           <boxGeometry args={[0.05, 0.05, 11]} />
