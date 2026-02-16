@@ -2,3 +2,6 @@ project_id = "nrgesfvfddwcoukyejpo"
 
 [functions.agent-chat]
 verify_jwt = false
+
+[functions.workflow-runner]
+verify_jwt = false

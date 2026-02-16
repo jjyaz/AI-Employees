@@ -15,11 +15,14 @@ import { ConnectionsPanel } from './panels/ConnectionsPanel';
 import { IntegrationsPanel } from './panels/IntegrationsPanel';
 import { CEOTaskModal } from './panels/CEOTaskModal';
 import { CEOExecutionPanel } from './panels/CEOExecutionPanel';
+import { UseCaseLibrary } from './panels/UseCaseLibrary';
 import { Stars } from '@react-three/drei';
 import type { AgentId, AgentEvent } from '@/lib/agents';
 import type { CloudState } from './3d/CloudWallMaterial';
 import { DEFAULT_INTEGRATIONS, type Integration, type IntegrationId, type IntegrationEvent } from '@/lib/integrations';
 import { CEOSwarmEngine, type CEOConfig, type CEOState } from '@/lib/ceoSwarm';
+import { WorkflowEngine } from '@/lib/workflowEngine';
+import type { UseCaseId, UseCaseConfig, WorkflowRun } from '@/lib/useCases';
 
 export type BeamState = 'idle' | 'collaboration' | 'processing' | 'success';
 export type FocusTarget = 'overview' | 'desk1' | 'desk2' | 'desk3' | 'desk4';
@@ -73,6 +76,11 @@ export default function BedroomScene() {
   const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
   const [activeIntegrationId, setActiveIntegrationId] = useState<string | null>(null);
   const [integrationEvents, setIntegrationEvents] = useState<IntegrationEvent[]>([]);
+
+  // Use Case Library state
+  const [useCasesOpen, setUseCasesOpen] = useState(false);
+  const [workflowRun, setWorkflowRun] = useState<WorkflowRun | null>(null);
+  const workflowEngineRef = useRef<WorkflowEngine | null>(null);
 
   const handleSelectAgent = useCallback((agentId: AgentId) => {
     setPrimaryAgent(agentId);
@@ -152,6 +160,21 @@ export default function BedroomScene() {
   const handleCEOResume = useCallback(() => ceoEngineRef.current?.resume(), []);
   const handleCEOAbort = useCallback(() => ceoEngineRef.current?.abort(), []);
   const handleCEOClose = useCallback(() => setCeoState(null), []);
+
+  // Use Case workflow handler
+  const handleRunWorkflow = useCallback((useCaseId: UseCaseId, config: UseCaseConfig, agents: AgentId[]) => {
+    const engine = new WorkflowEngine(
+      (run) => setWorkflowRun({ ...run }),
+      (ev) => setAgentEvents(prev => [...prev.slice(-80), ev]),
+      (bs) => setBeamState(bs),
+      (agentId, content, done) => {
+        setTvStreamContent(content);
+        setTvStreamDone(done);
+      },
+    );
+    workflowEngineRef.current = engine;
+    engine.run(useCaseId, config, agents);
+  }, []);
 
   // Integration handlers
   const handleToggleConnection = useCallback((id: IntegrationId) => {
@@ -263,13 +286,19 @@ export default function BedroomScene() {
           onOpenConnections={() => setConnectionsOpen(true)}
           onOpenIntegrations={() => setIntegrationsOpen(true)}
           onOpenCEOTask={() => setCeoModalOpen(true)}
+          onOpenUseCases={() => setUseCasesOpen(true)}
           onChangeAgent={() => setShowOnboarding(true)}
           consoleOpen={consoleOpen}
           ceoActive={!!ceoState && !['idle', 'complete', 'aborted'].includes(ceoState.phase)}
         />
       )}
 
-      {/* CEO Task Modal */}
+      {/* Use Case Library */}
+      <UseCaseLibrary
+        isOpen={useCasesOpen}
+        onClose={() => setUseCasesOpen(false)}
+        onRunWorkflow={handleRunWorkflow}
+      />
       <CEOTaskModal
         isOpen={ceoModalOpen}
         onClose={() => setCeoModalOpen(false)}
