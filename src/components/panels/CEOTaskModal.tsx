@@ -42,7 +42,7 @@ export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
             <div>
               <h2 className="neural-title text-base ceo-title-glow">Executive Directive</h2>
               <p className="text-muted-foreground text-[10px] tracking-wider font-mono mt-0.5">
-                FULL SWARM ORCHESTRATION
+                FULL SWARM ORCHESTRATION WITH KIMI CLAW
               </p>
             </div>
           </div>
