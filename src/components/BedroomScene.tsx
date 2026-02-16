@@ -6,14 +6,17 @@ import { NeuralBeams } from './3d/NeuralBeams';
 import { CenterHub } from './3d/CenterHub';
 import { CameraController, type CameraMode } from './3d/CameraController';
 import { NeuralTV } from './3d/NeuralTV';
+import { ConnectionDock } from './3d/ConnectionDock';
 import { CameraControlPad } from './CameraControlPad';
 import { OnboardingOverlay } from './panels/OnboardingOverlay';
 import { TopBar } from './panels/TopBar';
 import { TaskConsole } from './panels/TaskConsole';
 import { ConnectionsPanel } from './panels/ConnectionsPanel';
+import { IntegrationsPanel } from './panels/IntegrationsPanel';
 import { Stars } from '@react-three/drei';
 import type { AgentId, AgentEvent } from '@/lib/agents';
 import type { CloudState } from './3d/CloudWallMaterial';
+import { DEFAULT_INTEGRATIONS, type Integration, type IntegrationId, type IntegrationEvent } from '@/lib/integrations';
 
 export type BeamState = 'idle' | 'collaboration' | 'processing' | 'success';
 export type FocusTarget = 'overview' | 'desk1' | 'desk2' | 'desk3' | 'desk4';
@@ -49,14 +52,19 @@ export default function BedroomScene() {
   const [taskRunning, setTaskRunning] = useState(false);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
 
-  // New state for panels
   const [primaryAgent, setPrimaryAgent] = useState<AgentId | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [tvStreamContent, setTvStreamContent] = useState('');
   const [tvStreamDone, setTvStreamDone] = useState(true);
+
+  // Integration state
+  const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
+  const [activeIntegrationId, setActiveIntegrationId] = useState<string | null>(null);
+  const [integrationEvents, setIntegrationEvents] = useState<IntegrationEvent[]>([]);
 
   const handleSelectAgent = useCallback((agentId: AgentId) => {
     setPrimaryAgent(agentId);
@@ -64,7 +72,6 @@ export default function BedroomScene() {
     const deskIdx = AGENT_DESK_MAP[agentId];
     setFocusTarget(`desk${deskIdx + 1}` as FocusTarget);
     setCameraMode('desk');
-    // Auto-open console after a brief camera transition
     setTimeout(() => setConsoleOpen(true), 800);
   }, []);
 
@@ -79,7 +86,6 @@ export default function BedroomScene() {
     else if (event.type === 'error') setBeamState('idle');
   }, []);
 
-  // Derive cloud state and star intensity from beam state
   const cloudState: CloudState = useMemo(() => {
     switch (beamState) {
       case 'collaboration': return 'collaboration';
@@ -122,6 +128,37 @@ export default function BedroomScene() {
     }, 4000);
   }, [taskRunning]);
 
+  // Integration handlers
+  const handleToggleConnection = useCallback((id: IntegrationId) => {
+    setIntegrations(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const newStatus = i.status === 'connected' || i.status === 'active' ? 'disconnected' : 'connected';
+      return {
+        ...i,
+        status: newStatus,
+        enabledForAgents: newStatus === 'disconnected' ? [] : i.enabledForAgents,
+      };
+    }));
+  }, []);
+
+  const handleToggleAgent = useCallback((integrationId: IntegrationId, agentId: AgentId) => {
+    setIntegrations(prev => prev.map(i => {
+      if (i.id !== integrationId) return i;
+      const enabled = i.enabledForAgents.includes(agentId);
+      return {
+        ...i,
+        enabledForAgents: enabled
+          ? i.enabledForAgents.filter(a => a !== agentId)
+          : [...i.enabledForAgents, agentId],
+      };
+    }));
+  }, []);
+
+  const integrationStatuses = useMemo(() =>
+    integrations.map(i => ({ id: i.id, status: i.status, color: i.color })),
+    [integrations]
+  );
+
   return (
     <div className="w-screen h-screen relative">
       <Canvas
@@ -147,6 +184,12 @@ export default function BedroomScene() {
             streamDone={tvStreamDone}
             agentEvents={agentEvents}
             primaryAgent={primaryAgent}
+          />
+
+          {/* Connection Dock - hardware rack near TV */}
+          <ConnectionDock
+            integrationStatuses={integrationStatuses}
+            activeIntegrationId={activeIntegrationId}
           />
 
           {DESK_POSITIONS.map((pos, i) => (
@@ -193,6 +236,7 @@ export default function BedroomScene() {
           beamState={beamState}
           onOpenConsole={() => setConsoleOpen(!consoleOpen)}
           onOpenConnections={() => setConnectionsOpen(true)}
+          onOpenIntegrations={() => setIntegrationsOpen(true)}
           onChangeAgent={() => setShowOnboarding(true)}
           consoleOpen={consoleOpen}
         />
@@ -211,6 +255,15 @@ export default function BedroomScene() {
 
       {/* Connections */}
       <ConnectionsPanel isOpen={connectionsOpen} onClose={() => setConnectionsOpen(false)} />
+
+      {/* Integrations */}
+      <IntegrationsPanel
+        isOpen={integrationsOpen}
+        onClose={() => setIntegrationsOpen(false)}
+        integrations={integrations}
+        onToggleConnection={handleToggleConnection}
+        onToggleAgent={handleToggleAgent}
+      />
 
       {/* Camera Controls */}
       {!showOnboarding && <CameraControlPad onSetMode={handleSetMode} currentMode={cameraMode} />}

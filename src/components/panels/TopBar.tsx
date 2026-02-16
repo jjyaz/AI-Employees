@@ -1,12 +1,12 @@
 import { AGENTS, AVAILABLE_MODELS, type AgentId } from '@/lib/agents';
 import type { BeamState } from '../BedroomScene';
-import type { CameraMode } from '../3d/CameraController';
 
 interface TopBarProps {
   primaryAgent: AgentId;
   beamState: BeamState;
   onOpenConsole: () => void;
   onOpenConnections: () => void;
+  onOpenIntegrations: () => void;
   onChangeAgent: () => void;
   consoleOpen: boolean;
 }
@@ -19,7 +19,7 @@ const STATE_LABELS: Record<BeamState, { label: string; className: string }> = {
 };
 
 export function TopBar({
-  primaryAgent, beamState, onOpenConsole, onOpenConnections, onChangeAgent, consoleOpen
+  primaryAgent, beamState, onOpenConsole, onOpenConnections, onOpenIntegrations, onChangeAgent, consoleOpen
 }: TopBarProps) {
   const agent = AGENTS.find(a => a.id === primaryAgent)!;
   const stateInfo = STATE_LABELS[beamState];
@@ -43,6 +43,9 @@ export function TopBar({
           className={`top-bar-btn ${consoleOpen ? 'top-bar-btn-active' : ''}`}
         >
           Task Console
+        </button>
+        <button onClick={onOpenIntegrations} className="top-bar-btn">
+          Integrations
         </button>
         <button onClick={onOpenConnections} className="top-bar-btn">
           Connections
