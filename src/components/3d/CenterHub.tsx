@@ -67,7 +67,7 @@ export function CenterHub({ beamState, onClick }: { beamState: BeamState; onClic
       </mesh>
 
       {/* 3D model in center */}
-      <primitive object={scene} position={[0, 0.3, 0]} scale={0.5} />
+      <primitive object={scene} position={[0, 0.3, 0]} scale={1.5} />
 
       <pointLight ref={glowRef} position={[0, 0.5, 0]} color={color} intensity={0.5} distance={5} />
     </group>
