@@ -337,3 +337,35 @@
   border-color: hsl(40 80% 50% / 0.5);
   box-shadow: 0 0 16px hsl(40 80% 50% / 0.15);
 }
+
+/* Use Case Library */
+.top-bar-btn-usecase {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--neural-green) / 0.3);
+  color: hsl(var(--neural-green));
+  text-shadow: 0 0 8px hsl(var(--neural-green) / 0.3);
+}
+.top-bar-btn-usecase:hover {
+  background: hsl(var(--neural-green) / 0.12);
+  border-color: hsl(var(--neural-green) / 0.5);
+  box-shadow: 0 0 16px hsl(var(--neural-green) / 0.15);
+}
+
+.use-case-panel {
+  background: hsl(var(--card) / 0.92);
+  backdrop-filter: blur(24px);
+  border: 1px solid hsl(var(--neural-green) / 0.2);
+  border-radius: 16px;
+  box-shadow: 0 0 60px hsl(var(--neural-green) / 0.06), 0 12px 48px hsl(var(--background) / 0.6);
+}
+
+.use-case-card {
+  @apply p-4 rounded-xl transition-all duration-200;
+  background: hsl(var(--muted) / 0.15);
+  border: 1px solid hsl(var(--border) / 0.15);
+}
+.use-case-card:hover {
+  border-color: var(--uc-color, hsl(var(--neural-green))) / 0.3;
+  box-shadow: 0 0 20px hsl(var(--neural-green) / 0.05);
+}

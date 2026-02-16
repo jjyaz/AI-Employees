@@ -14,13 +14,145 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      memory_vault: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          source: string | null
+          source_url: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      use_case_runs: {
+        Row: {
+          assigned_agents: string[] | null
+          completed_at: string | null
+          config: Json | null
+          created_at: string
+          id: string
+          output: string | null
+          output_metadata: Json | null
+          started_at: string | null
+          status: string
+          use_case_id: string
+        }
+        Insert: {
+          assigned_agents?: string[] | null
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          output?: string | null
+          output_metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          use_case_id: string
+        }
+        Update: {
+          assigned_agents?: string[] | null
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string
+          id?: string
+          output?: string | null
+          output_metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          use_case_id?: string
+        }
+        Relationships: []
+      }
+      use_case_schedules: {
+        Row: {
+          assigned_agents: string[] | null
+          config: Json | null
+          created_at: string
+          cron_expression: string
+          enabled: boolean | null
+          id: string
+          last_run_at: string | null
+          next_run_at: string | null
+          output_destination: string | null
+          updated_at: string
+          use_case_id: string
+        }
+        Insert: {
+          assigned_agents?: string[] | null
+          config?: Json | null
+          created_at?: string
+          cron_expression: string
+          enabled?: boolean | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          output_destination?: string | null
+          updated_at?: string
+          use_case_id: string
+        }
+        Update: {
+          assigned_agents?: string[] | null
+          config?: Json | null
+          created_at?: string
+          cron_expression?: string
+          enabled?: boolean | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          output_destination?: string | null
+          updated_at?: string
+          use_case_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_memory_vault: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json
+          similarity: number
+          source: string
+          source_url: string
+          tags: string[]
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
