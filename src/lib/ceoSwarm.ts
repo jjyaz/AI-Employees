@@ -1,5 +1,4 @@
-import type { AgentId, AgentEvent, Message } from './agents';
-import { streamAgentChat } from './agentStream';
+import type { AgentId, AgentEvent } from './agents';
 
 export type CEOPhase = 'idle' | 'strategic-breakdown' | 'parallel-work' | 'internal-review' | 'consolidation' | 'complete' | 'paused' | 'aborted';
 export type DepthMode = 'fast' | 'balanced' | 'deep';
@@ -11,6 +10,8 @@ export interface CEOConfig {
   tokenCap: number;
   toolCallLimit: number;
   integrations: { github: boolean; slack: boolean; docs: boolean };
+  browserAutomation?: boolean;
+  autoApprove?: boolean;
 }
 
 export interface AgentTask {
@@ -20,39 +21,59 @@ export interface AgentTask {
   output: string;
 }
 
+export interface CEOEvent {
+  type: 'phase' | 'agent_message' | 'tool_call' | 'tool_result' | 'error' | 'final';
+  actor: string;
+  ts: number;
+  severity: 'info' | 'warn' | 'error';
+  safeTrace: string;
+  payload?: Record<string, unknown>;
+}
+
 export interface CEOState {
   phase: CEOPhase;
+  runId: string | null;
   tasks: AgentTask[];
   events: AgentEvent[];
+  ceoEvents: CEOEvent[];
   finalOutput: string;
   error: string | null;
 }
 
-const PHASE_LABELS: Record<CEOPhase, string> = {
+export const PHASE_LABELS: Record<CEOPhase, string> = {
   'idle': 'Idle',
-  'strategic-breakdown': 'Phase 1 — Strategic Breakdown',
-  'parallel-work': 'Phase 2 — Parallel Execution',
-  'internal-review': 'Phase 3 — Internal Review',
-  'consolidation': 'Phase 4 — Final Consolidation',
+  'strategic-breakdown': 'Phase A — Strategy',
+  'parallel-work': 'Phase B — Execution',
+  'internal-review': 'Phase C — Review',
+  'consolidation': 'Phase D — Consolidation',
   'complete': 'Executive Output Ready',
   'paused': 'Paused',
   'aborted': 'Aborted',
 };
 
-export { PHASE_LABELS };
+const ACTOR_TO_AGENT: Record<string, AgentId> = {
+  'KimiClaw': 'kimi-cli',
+  'kimi-cli': 'kimi-cli',
+  'openclaw': 'openclaw',
+  'mac-mini': 'mac-mini',
+  'raspberry-pi': 'raspberry-pi',
+};
+
+const CEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ceo-orchestrator`;
 
 type StateCallback = (state: CEOState) => void;
 
 export class CEOSwarmEngine {
   private state: CEOState = {
     phase: 'idle',
+    runId: null,
     tasks: [],
     events: [],
+    ceoEvents: [],
     finalOutput: '',
     error: null,
   };
   private abortController: AbortController | null = null;
-  private paused = false;
   private onStateChange: StateCallback;
   private onAgentEvent: (event: AgentEvent) => void;
   private onBeamState: (state: 'idle' | 'collaboration' | 'processing' | 'success') => void;
@@ -67,22 +88,16 @@ export class CEOSwarmEngine {
     this.onBeamState = onBeamState;
   }
 
-  private emit(event: AgentEvent) {
-    this.state.events = [...this.state.events.slice(-80), event];
-    this.onAgentEvent(event);
-    this.notify();
-  }
-
   private notify() {
     this.onStateChange({ ...this.state });
   }
 
-  private makeEvent(agentId: AgentId, type: AgentEvent['type'], label: string): AgentEvent {
-    return { id: crypto.randomUUID(), timestamp: Date.now(), agentId, type, label };
+  private emitAgentEvent(agentId: AgentId, type: AgentEvent['type'], label: string) {
+    const event: AgentEvent = { id: crypto.randomUUID(), timestamp: Date.now(), agentId, type, label };
+    this.state.events = [...this.state.events.slice(-80), event];
+    this.onAgentEvent(event);
   }
 
-  pause() { this.paused = true; this.state.phase = 'paused'; this.notify(); }
-  resume() { this.paused = false; this.notify(); }
   abort() {
     this.abortController?.abort();
     this.state.phase = 'aborted';
@@ -93,127 +108,97 @@ export class CEOSwarmEngine {
   async run(config: CEOConfig) {
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
-    this.state = { phase: 'idle', tasks: [], events: [], finalOutput: '', error: null };
+
+    this.state = {
+      phase: 'strategic-breakdown',
+      runId: null,
+      tasks: [],
+      events: [],
+      ceoEvents: [],
+      finalOutput: '',
+      error: null,
+    };
     this.onBeamState('collaboration');
+    this.notify();
+
+    // Initialize tasks
+    const agentIds: AgentId[] = ['kimi-cli', 'openclaw', 'mac-mini', 'raspberry-pi'];
+    const agentLabels = ['Orchestration & Planning', 'Creative & UX Strategy', 'Technical Implementation', 'Automation & Integration'];
+    this.state.tasks = agentIds.map((id, i) => ({
+      agentId: id,
+      label: agentLabels[i],
+      status: 'pending' as const,
+      output: '',
+    }));
+    this.notify();
 
     try {
-      // Phase 1: Strategic Breakdown (Kimi CLI)
-      this.state.phase = 'strategic-breakdown';
-      this.notify();
-      this.emit(this.makeEvent('kimi-cli', 'planning', 'Decomposing executive directive...'));
+      const resp = await fetch(`${CEO_URL}/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          goal: config.directive,
+          mode: config.depth,
+          model: config.model,
+          agents: agentIds,
+          budgets: { maxTokens: config.tokenCap, maxToolCalls: config.toolCallLimit },
+          toolPermissions: {
+            github: config.integrations.github,
+            slack: config.integrations.slack,
+            docs: config.integrations.docs,
+            browserAutomation: config.browserAutomation || false,
+          },
+        }),
+        signal,
+      });
 
-      const breakdownPrompt = `You are the orchestrator. Break down this executive directive into exactly 4 subtasks, one for each team member:
-1. Kimi CLI (yourself) - Planning & orchestration subtask
-2. OpenClaw - Creative & UX subtask  
-3. Mac Mini - Technical implementation subtask
-4. Raspberry Pi - Automation & integration subtask
-
-Directive: "${config.directive}"
-
-Depth mode: ${config.depth}
-
-Respond with a structured breakdown. Format each subtask as:
-**[Agent Name]**: [specific subtask description]
-
-Be specific and actionable.`;
-
-      const breakdownOutput = await this.streamAgent('kimi-cli', breakdownPrompt, config.model, signal);
-      if (signal.aborted) return;
-
-      // Parse tasks from breakdown
-      const agentIds: AgentId[] = ['kimi-cli', 'openclaw', 'mac-mini', 'raspberry-pi'];
-      const agentLabels = ['Orchestration & Planning', 'Creative & UX Strategy', 'Technical Implementation', 'Automation & Integration'];
-      this.state.tasks = agentIds.map((id, i) => ({
-        agentId: id,
-        label: agentLabels[i],
-        status: 'pending' as const,
-        output: '',
-      }));
-      this.notify();
-
-      // Phase 2: Parallel Work
-      this.state.phase = 'parallel-work';
-      this.onBeamState('processing');
-      this.notify();
-
-      const workPrompts = [
-        `Based on this strategic breakdown, execute YOUR orchestration subtask. The directive: "${config.directive}"\n\nBreakdown:\n${breakdownOutput}\n\nFocus on your planning & coordination role. Produce structured output.`,
-        `Based on this strategic breakdown, execute YOUR creative subtask. The directive: "${config.directive}"\n\nBreakdown:\n${breakdownOutput}\n\nFocus on creative ideation, naming, copy, and UX strategy. Produce creative output.`,
-        `Based on this strategic breakdown, execute YOUR technical subtask. The directive: "${config.directive}"\n\nBreakdown:\n${breakdownOutput}\n\nFocus on code, architecture, and implementation details. Produce technical output with code examples.`,
-        `Based on this strategic breakdown, execute YOUR automation subtask. The directive: "${config.directive}"\n\nBreakdown:\n${breakdownOutput}\n\nFocus on automation scripts, integration hooks, and deployment steps. Produce actionable automation output.`,
-      ];
-
-      // Run agents sequentially but stream each (parallel would hit rate limits)
-      for (let i = 0; i < agentIds.length; i++) {
-        if (signal.aborted) return;
-        while (this.paused) await new Promise(r => setTimeout(r, 300));
-
-        this.state.tasks[i].status = 'running';
-        this.emit(this.makeEvent(agentIds[i], 'generating', `${agentLabels[i]} in progress...`));
-        this.notify();
-
-        const output = await this.streamAgent(agentIds[i], workPrompts[i], config.model, signal);
-        this.state.tasks[i].output = output;
-        this.state.tasks[i].status = 'done';
-        this.emit(this.makeEvent(agentIds[i], 'complete', `${agentLabels[i]} complete`));
-        this.notify();
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: `HTTP ${resp.status}` }));
+        throw new Error(err.error || `CEO run failed (${resp.status})`);
       }
 
-      // Phase 3: Internal Review (Kimi CLI reviews all)
-      this.state.phase = 'internal-review';
-      this.onBeamState('collaboration');
-      this.notify();
-      this.emit(this.makeEvent('kimi-cli', 'reviewing', 'Reviewing all agent outputs...'));
+      if (!resp.body) throw new Error('No response stream');
 
-      const allOutputs = this.state.tasks.map(t => `### ${t.label} (${t.agentId})\n${t.output}`).join('\n\n---\n\n');
-      const reviewPrompt = `You are the coordinator. Review these outputs from all agents for the directive: "${config.directive}"
+      // Parse SSE stream
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-${allOutputs}
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-Identify any conflicts, gaps, or improvements. Provide a brief review summary with recommendations.`;
+        let nlIdx: number;
+        while ((nlIdx = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, nlIdx);
+          buffer = buffer.slice(nlIdx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (!line.startsWith('data: ')) continue;
 
-      const reviewOutput = await this.streamAgent('kimi-cli', reviewPrompt, config.model, signal);
-      if (signal.aborted) return;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
 
-      // Phase 4: Final Consolidation
-      this.state.phase = 'consolidation';
-      this.onBeamState('processing');
-      this.notify();
-      this.emit(this.makeEvent('kimi-cli', 'generating', 'Producing executive output...'));
+          try {
+            const event: CEOEvent = JSON.parse(jsonStr);
+            this.state.ceoEvents = [...this.state.ceoEvents.slice(-100), event];
+            this.processCEOEvent(event);
+          } catch {
+            // Skip unparseable
+          }
+        }
+      }
 
-      const consolidationPrompt = `Produce the FINAL EXECUTIVE OUTPUT for: "${config.directive}"
-
-Agent outputs:
-${allOutputs}
-
-Review notes:
-${reviewOutput}
-
-Format as:
-## Executive Summary
-[2-3 sentence summary]
-
-## Key Decisions
-[Bullet list]
-
-## Deliverables
-[Numbered deliverables with details]
-
-## Next Steps
-[Recommended follow-up actions]
-
-Be comprehensive but concise. This is the final deliverable.`;
-
-      const finalOutput = await this.streamAgent('kimi-cli', consolidationPrompt, config.model, signal);
-      this.state.finalOutput = finalOutput;
-
-      // Complete
-      this.state.phase = 'complete';
-      this.onBeamState('success');
-      this.emit(this.makeEvent('kimi-cli', 'complete', 'Executive output ready'));
-      this.notify();
-
-      setTimeout(() => this.onBeamState('idle'), 5000);
+      // If we reached here without error, ensure complete state
+      if (this.state.phase !== 'complete' && this.state.phase !== 'aborted') {
+        this.state.phase = 'complete';
+        this.onBeamState('success');
+        this.notify();
+        setTimeout(() => this.onBeamState('idle'), 5000);
+      }
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
       this.state.error = (e as Error).message;
@@ -223,21 +208,73 @@ Be comprehensive but concise. This is the final deliverable.`;
     }
   }
 
-  private streamAgent(agentId: AgentId, prompt: string, model: string, signal: AbortSignal): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let content = '';
-      streamAgentChat({
-        messages: [{ role: 'user', content: prompt }],
-        agentId,
-        model,
-        maxTokens: 2048,
-        temperature: 0.7,
-        onDelta: (chunk) => { content += chunk; },
-        onEvent: (ev) => { this.emit(ev); },
-        onDone: () => resolve(content),
-        onError: (err) => reject(new Error(err)),
-        signal,
-      });
-    });
+  private processCEOEvent(event: CEOEvent) {
+    const agentId = ACTOR_TO_AGENT[event.actor] || 'kimi-cli';
+
+    switch (event.type) {
+      case 'phase': {
+        const trace = event.safeTrace.toLowerCase();
+        if (trace.includes('phase a') || trace.includes('strategic')) {
+          this.state.phase = 'strategic-breakdown';
+          this.onBeamState('collaboration');
+          this.emitAgentEvent('kimi-cli', 'planning', event.safeTrace);
+        } else if (trace.includes('phase b') || trace.includes('parallel')) {
+          this.state.phase = 'parallel-work';
+          this.onBeamState('processing');
+          this.emitAgentEvent('kimi-cli', 'planning', event.safeTrace);
+        } else if (trace.includes('phase c') || trace.includes('review')) {
+          this.state.phase = 'internal-review';
+          this.onBeamState('collaboration');
+          this.emitAgentEvent('kimi-cli', 'reviewing', event.safeTrace);
+        } else if (trace.includes('phase d') || trace.includes('consolidation')) {
+          this.state.phase = 'consolidation';
+          this.onBeamState('processing');
+          this.emitAgentEvent('kimi-cli', 'generating', event.safeTrace);
+        }
+        break;
+      }
+
+      case 'agent_message': {
+        const trace = event.safeTrace.toLowerCase();
+        if (trace.includes('starting')) {
+          const task = this.state.tasks.find(t => t.agentId === agentId);
+          if (task) task.status = 'running';
+          this.emitAgentEvent(agentId, 'generating', event.safeTrace);
+        } else if (trace.includes('completed') || trace.includes('complete')) {
+          const task = this.state.tasks.find(t => t.agentId === agentId);
+          if (task) {
+            task.status = 'done';
+            task.output = (event.payload?.outputPreview as string) || (event.payload?.reviewPreview as string) || '';
+          }
+          this.emitAgentEvent(agentId, 'complete', event.safeTrace);
+        } else {
+          this.emitAgentEvent(agentId, 'generating', event.safeTrace);
+        }
+        break;
+      }
+
+      case 'tool_call':
+        this.emitAgentEvent(agentId, 'tool_call', event.safeTrace);
+        break;
+
+      case 'error':
+        this.state.error = event.safeTrace;
+        this.state.phase = 'aborted';
+        this.onBeamState('idle');
+        this.emitAgentEvent(agentId, 'error', event.safeTrace);
+        break;
+
+      case 'final': {
+        this.state.phase = 'complete';
+        this.state.finalOutput = (event.payload?.finalOutput as string) || '';
+        this.state.runId = (event.payload?.runId as string) || null;
+        this.onBeamState('success');
+        this.emitAgentEvent('kimi-cli', 'complete', 'Executive output ready');
+        setTimeout(() => this.onBeamState('idle'), 5000);
+        break;
+      }
+    }
+
+    this.notify();
   }
 }

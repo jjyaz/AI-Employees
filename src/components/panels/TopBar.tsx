@@ -60,7 +60,7 @@ export function TopBar({
           onClick={onOpenCEOTask}
           className={`top-bar-btn top-bar-btn-ceo ${ceoActive ? 'top-bar-btn-active' : ''}`}
         >
-          ⚡ CEO Task
+          ⚡ CEO Task (KimiClaw)
         </button>
       </div>
 

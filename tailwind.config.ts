@@ -54,6 +54,9 @@ export default {
           green: "hsl(var(--neural-green))",
           glow: "hsl(var(--neural-glow))",
         },
+        ceo: {
+          gold: "hsl(var(--ceo-gold))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { AVAILABLE_MODELS } from '@/lib/agents';
 import type { CEOConfig, DepthMode } from '@/lib/ceoSwarm';
+import { Settings } from 'lucide-react';
 
 interface CEOTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEngage: (config: CEOConfig) => void;
+  onOpenSettings: () => void;
+  gatewayStatus: 'connected' | 'needs-pairing' | 'error' | 'disconnected';
 }
 
 const DEPTH_OPTIONS: { value: DepthMode; label: string; desc: string }[] = [
@@ -14,20 +17,30 @@ const DEPTH_OPTIONS: { value: DepthMode; label: string; desc: string }[] = [
   { value: 'deep', label: 'Deep Executive', desc: 'Maximum depth — extended review cycles' },
 ];
 
-export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
+const GATEWAY_BADGE: Record<string, { label: string; className: string }> = {
+  connected: { label: 'CONNECTED', className: 'neural-badge-green' },
+  'needs-pairing': { label: 'NEEDS PAIRING', className: 'neural-badge-red' },
+  error: { label: 'ERROR', className: 'neural-badge-red' },
+  disconnected: { label: 'OFFLINE', className: 'text-muted-foreground/40 border border-border/20 px-3 py-1 rounded-full text-xs tracking-wider uppercase font-medium' },
+};
+
+export function CEOTaskModal({ isOpen, onClose, onEngage, onOpenSettings, gatewayStatus }: CEOTaskModalProps) {
   const [directive, setDirective] = useState('');
   const [depth, setDepth] = useState<DepthMode>('balanced');
   const [model, setModel] = useState(AVAILABLE_MODELS[0].id);
   const [tokenCap, setTokenCap] = useState(8192);
   const [toolCallLimit, setToolCallLimit] = useState(20);
   const [integrations, setIntegrations] = useState({ github: false, slack: false, docs: false });
+  const [browserAutomation, setBrowserAutomation] = useState(false);
 
   if (!isOpen) return null;
 
   const handleEngage = () => {
     if (!directive.trim()) return;
-    onEngage({ directive: directive.trim(), depth, model, tokenCap, toolCallLimit, integrations });
+    onEngage({ directive: directive.trim(), depth, model, tokenCap, toolCallLimit, integrations, browserAutomation });
   };
+
+  const badge = GATEWAY_BADGE[gatewayStatus];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -46,7 +59,15 @@ export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="absolute top-5 right-5 text-muted-foreground hover:text-foreground text-sm">✕</button>
+          <div className="flex items-center gap-2 absolute top-5 right-5">
+            <span className={badge.className} style={{ fontFamily: 'Orbitron, sans-serif', fontSize: '8px' }}>
+              {badge.label}
+            </span>
+            <button onClick={onOpenSettings} className="cam-control-btn w-6 h-6 !rounded" title="CEO Settings">
+              <Settings size={10} />
+            </button>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-sm">✕</button>
+          </div>
         </div>
 
         <div className="p-6 space-y-5">
@@ -56,7 +77,7 @@ export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
             <textarea
               value={directive}
               onChange={e => setDirective(e.target.value)}
-              placeholder="Describe your executive-level task. All four AI employees will collaborate to execute it..."
+              placeholder="Describe your executive-level task. KimiClaw will orchestrate all four AI employees to execute it..."
               rows={4}
               className="ceo-textarea"
             />
@@ -120,6 +141,17 @@ export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
                   </div>
                 </label>
               ))}
+              <label className="ceo-toggle-label">
+                <input
+                  type="checkbox"
+                  checked={browserAutomation}
+                  onChange={() => setBrowserAutomation(p => !p)}
+                  className="sr-only"
+                />
+                <div className={`ceo-toggle-chip ${browserAutomation ? 'ceo-toggle-active' : ''}`}>
+                  Browser
+                </div>
+              </label>
             </div>
           </div>
         </div>
@@ -128,10 +160,10 @@ export function CEOTaskModal({ isOpen, onClose, onEngage }: CEOTaskModalProps) {
         <div className="px-6 pb-6 pt-2">
           <button
             onClick={handleEngage}
-            disabled={!directive.trim()}
+            disabled={!directive.trim() || gatewayStatus === 'error'}
             className="ceo-engage-btn"
           >
-            <span className="mr-2">⚡</span> Engage Full Swarm
+            <span className="mr-2">⚡</span> Engage KimiClaw CEO
           </button>
         </div>
       </div>

@@ -1,18 +1,18 @@
-export type IntegrationId = 'github' | 'slack' | 'google-drive' | 'webhook' | 'local-workspace';
+export type IntegrationId = 'kimiclaw-gateway' | 'github' | 'slack' | 'google-drive' | 'webhook' | 'local-workspace';
 
-export type IntegrationStatus = 'disconnected' | 'connected' | 'needs-reauth' | 'error' | 'active';
+export type IntegrationStatus = 'disconnected' | 'connected' | 'needs-reauth' | 'needs-pairing' | 'error' | 'active';
 
 export type IntegrationEventType = 'idle' | 'preparing' | 'calling' | 'awaiting' | 'success' | 'failure';
 
 export interface Integration {
   id: IntegrationId;
   name: string;
-  icon: string; // emoji or short label
+  icon: string;
   description: string;
   color: string;
   capabilities: string[];
   status: IntegrationStatus;
-  enabledForAgents: string[]; // agent IDs
+  enabledForAgents: string[];
 }
 
 export interface IntegrationEvent {
@@ -24,7 +24,25 @@ export interface IntegrationEvent {
   detail?: string;
 }
 
+export interface KimiClawGatewayConfig {
+  baseUrl: string;
+  gatewayToken: string;
+  devicePairingEnabled: boolean;
+  deviceId: string | null;
+  isPaired: boolean;
+}
+
 export const DEFAULT_INTEGRATIONS: Integration[] = [
+  {
+    id: 'kimiclaw-gateway',
+    name: 'KimiClaw Gateway (CEO)',
+    icon: '⚡',
+    description: 'Built-in CEO orchestration gateway. Manages swarm task execution, telemetry, and persistent memory.',
+    color: '#d4a017',
+    capabilities: ['CEO Orchestration', 'Task Decomposition', 'Agent Coordination', 'Persistent Memory', 'Run Replay', 'Telemetry Streaming'],
+    status: 'connected',
+    enabledForAgents: ['kimi-cli', 'openclaw', 'mac-mini', 'raspberry-pi'],
+  },
   {
     id: 'github',
     name: 'GitHub',
