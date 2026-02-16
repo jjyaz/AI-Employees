@@ -363,8 +363,6 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
 
 ## 📄 License & Credits
 
-This project was built with [Lovable](https://lovable.dev).
-
 3D character models are custom assets included in the `public/models/` directory.
 
 ---
