@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useTexture } from '@react-three/drei';
 import { useCloudWallMaterial, type CloudState } from './CloudWallMaterial';
 import { FloorLamp } from './FloorLamp';
 import type { BeamState } from '../BedroomScene';
@@ -14,6 +15,7 @@ interface RoomProps {
 export function Room({ beamState = 'idle', cloudState = 'idle', starIntensity = 0 }: RoomProps) {
   const ledRef = useRef<THREE.PointLight>(null);
   const ledRef2 = useRef<THREE.PointLight>(null);
+  const pictureTexture = useTexture('/images/wall-picture.png');
 
   const wallProps = { beamState, cloudState, starIntensity };
   const { material: backWall } = useCloudWallMaterial({ ...wallProps, driftDirection: 1.0 });
@@ -92,6 +94,20 @@ export function Room({ beamState = 'idle', cloudState = 'idle', starIntensity = 
           <meshStandardMaterial emissive={i === 0 ? '#06b6d4' : '#3b82f6'} emissiveIntensity={2} color="#000" />
         </mesh>
       ))}
+
+      {/* Framed picture on left wall */}
+      <group position={[-5.4, 3.2, 0]} rotation={[0, Math.PI / 2, 0]}>
+        {/* Frame */}
+        <mesh>
+          <boxGeometry args={[2.2, 2.8, 0.12]} />
+          <meshStandardMaterial color="#8B6914" roughness={0.4} metalness={0.6} />
+        </mesh>
+        {/* Picture */}
+        <mesh position={[0, 0, 0.07]}>
+          <planeGeometry args={[1.8, 2.4]} />
+          <meshStandardMaterial map={pictureTexture} />
+        </mesh>
+      </group>
 
       {/* Floor lamps on TV wall */}
       <FloorLamp position={[-4.8, 0, -5.0]} beamState={beamState} />
