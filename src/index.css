@@ -138,3 +138,31 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+.cam-control-btn {
+  @apply w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200;
+  background: hsl(var(--background) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.3);
+  color: hsl(var(--muted-foreground));
+}
+
+.cam-control-btn:hover {
+  background: hsl(var(--background) / 0.85);
+  border-color: hsl(var(--neural-blue) / 0.5);
+  color: hsl(var(--neural-blue));
+  box-shadow: 0 0 12px hsl(var(--neural-blue) / 0.2);
+}
+
+.cam-control-btn-active {
+  background: hsl(var(--neural-blue) / 0.15);
+  border-color: hsl(var(--neural-blue) / 0.5);
+  color: hsl(var(--neural-blue));
+  box-shadow: 0 0 12px hsl(var(--neural-blue) / 0.2);
+}
+
+.cam-control-label {
+  @apply text-center text-[8px] tracking-widest uppercase;
+  font-family: 'Orbitron', sans-serif;
+  color: hsl(var(--muted-foreground) / 0.4);
+}
