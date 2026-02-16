@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useState, useCallback, useMemo } from 'react';
+import { Suspense, useState, useCallback, useMemo, useRef } from 'react';
 import { Room } from './3d/Room';
 import { DeskStation } from './3d/DeskStation';
 import { NeuralBeams } from './3d/NeuralBeams';
@@ -13,10 +13,13 @@ import { TopBar } from './panels/TopBar';
 import { TaskConsole } from './panels/TaskConsole';
 import { ConnectionsPanel } from './panels/ConnectionsPanel';
 import { IntegrationsPanel } from './panels/IntegrationsPanel';
+import { CEOTaskModal } from './panels/CEOTaskModal';
+import { CEOExecutionPanel } from './panels/CEOExecutionPanel';
 import { Stars } from '@react-three/drei';
 import type { AgentId, AgentEvent } from '@/lib/agents';
 import type { CloudState } from './3d/CloudWallMaterial';
 import { DEFAULT_INTEGRATIONS, type Integration, type IntegrationId, type IntegrationEvent } from '@/lib/integrations';
+import { CEOSwarmEngine, type CEOConfig, type CEOState } from '@/lib/ceoSwarm';
 
 export type BeamState = 'idle' | 'collaboration' | 'processing' | 'success';
 export type FocusTarget = 'overview' | 'desk1' | 'desk2' | 'desk3' | 'desk4';
@@ -60,6 +63,11 @@ export default function BedroomScene() {
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [tvStreamContent, setTvStreamContent] = useState('');
   const [tvStreamDone, setTvStreamDone] = useState(true);
+
+  // CEO Task Mode state
+  const [ceoModalOpen, setCeoModalOpen] = useState(false);
+  const [ceoState, setCeoState] = useState<CEOState | null>(null);
+  const ceoEngineRef = useRef<CEOSwarmEngine | null>(null);
 
   // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
@@ -127,6 +135,23 @@ export default function BedroomScene() {
       setTimeout(() => { setBeamState('idle'); setTaskRunning(false); }, 2000);
     }, 4000);
   }, [taskRunning]);
+
+  // CEO Task handlers
+  const handleCEOEngage = useCallback((config: CEOConfig) => {
+    setCeoModalOpen(false);
+    const engine = new CEOSwarmEngine(
+      (s) => setCeoState({ ...s }),
+      (ev) => setAgentEvents(prev => [...prev.slice(-80), ev]),
+      (bs) => setBeamState(bs),
+    );
+    ceoEngineRef.current = engine;
+    engine.run(config);
+  }, []);
+
+  const handleCEOPause = useCallback(() => ceoEngineRef.current?.pause(), []);
+  const handleCEOResume = useCallback(() => ceoEngineRef.current?.resume(), []);
+  const handleCEOAbort = useCallback(() => ceoEngineRef.current?.abort(), []);
+  const handleCEOClose = useCallback(() => setCeoState(null), []);
 
   // Integration handlers
   const handleToggleConnection = useCallback((id: IntegrationId) => {
@@ -237,11 +262,30 @@ export default function BedroomScene() {
           onOpenConsole={() => setConsoleOpen(!consoleOpen)}
           onOpenConnections={() => setConnectionsOpen(true)}
           onOpenIntegrations={() => setIntegrationsOpen(true)}
+          onOpenCEOTask={() => setCeoModalOpen(true)}
           onChangeAgent={() => setShowOnboarding(true)}
           consoleOpen={consoleOpen}
+          ceoActive={!!ceoState && !['idle', 'complete', 'aborted'].includes(ceoState.phase)}
         />
       )}
 
+      {/* CEO Task Modal */}
+      <CEOTaskModal
+        isOpen={ceoModalOpen}
+        onClose={() => setCeoModalOpen(false)}
+        onEngage={handleCEOEngage}
+      />
+
+      {/* CEO Execution Panel */}
+      {ceoState && (
+        <CEOExecutionPanel
+          state={ceoState}
+          onPause={handleCEOPause}
+          onResume={handleCEOResume}
+          onAbort={handleCEOAbort}
+          onClose={handleCEOClose}
+        />
+      )}
       {/* Task Console */}
       {primaryAgent && (
         <TaskConsole

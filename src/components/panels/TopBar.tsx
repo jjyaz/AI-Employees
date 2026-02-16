@@ -7,8 +7,10 @@ interface TopBarProps {
   onOpenConsole: () => void;
   onOpenConnections: () => void;
   onOpenIntegrations: () => void;
+  onOpenCEOTask: () => void;
   onChangeAgent: () => void;
   consoleOpen: boolean;
+  ceoActive: boolean;
 }
 
 const STATE_LABELS: Record<BeamState, { label: string; className: string }> = {
@@ -19,7 +21,7 @@ const STATE_LABELS: Record<BeamState, { label: string; className: string }> = {
 };
 
 export function TopBar({
-  primaryAgent, beamState, onOpenConsole, onOpenConnections, onOpenIntegrations, onChangeAgent, consoleOpen
+  primaryAgent, beamState, onOpenConsole, onOpenConnections, onOpenIntegrations, onOpenCEOTask, onChangeAgent, consoleOpen, ceoActive
 }: TopBarProps) {
   const agent = AGENTS.find(a => a.id === primaryAgent)!;
   const stateInfo = STATE_LABELS[beamState];
@@ -49,6 +51,12 @@ export function TopBar({
         </button>
         <button onClick={onOpenConnections} className="top-bar-btn">
           Connections
+        </button>
+        <button
+          onClick={onOpenCEOTask}
+          className={`top-bar-btn top-bar-btn-ceo ${ceoActive ? 'top-bar-btn-active' : ''}`}
+        >
+          ⚡ CEO Task
         </button>
       </div>
 
