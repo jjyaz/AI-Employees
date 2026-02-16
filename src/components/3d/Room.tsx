@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useCloudWallMaterial, type CloudState } from './CloudWallMaterial';
+import { FloorLamp } from './FloorLamp';
 import type { BeamState } from '../BedroomScene';
 
 interface RoomProps {
@@ -91,6 +92,10 @@ export function Room({ beamState = 'idle', cloudState = 'idle', starIntensity = 
           <meshStandardMaterial emissive={i === 0 ? '#06b6d4' : '#3b82f6'} emissiveIntensity={2} color="#000" />
         </mesh>
       ))}
+
+      {/* Floor lamps on TV wall */}
+      <FloorLamp position={[-4.8, 0, -5.0]} beamState={beamState} />
+      <FloorLamp position={[4.8, 0, -5.0]} beamState={beamState} />
     </group>
   );
 }
