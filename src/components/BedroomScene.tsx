@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useState, useCallback, useRef } from 'react';
+import { Suspense, useState, useCallback, useMemo } from 'react';
 import { Room } from './3d/Room';
 import { DeskStation } from './3d/DeskStation';
 import { NeuralBeams } from './3d/NeuralBeams';
@@ -13,6 +13,7 @@ import { TaskConsole } from './panels/TaskConsole';
 import { ConnectionsPanel } from './panels/ConnectionsPanel';
 import { Stars } from '@react-three/drei';
 import type { AgentId, AgentEvent } from '@/lib/agents';
+import type { CloudState } from './3d/CloudWallMaterial';
 
 export type BeamState = 'idle' | 'collaboration' | 'processing' | 'success';
 export type FocusTarget = 'overview' | 'desk1' | 'desk2' | 'desk3' | 'desk4';
@@ -69,7 +70,6 @@ export default function BedroomScene() {
 
   const handleAgentEvent = useCallback((event: AgentEvent) => {
     setAgentEvents(prev => [...prev.slice(-50), event]);
-    // Update beam state based on events
     if (event.type === 'planning') setBeamState('collaboration');
     else if (event.type === 'generating') setBeamState('processing');
     else if (event.type === 'complete') {
@@ -78,6 +78,20 @@ export default function BedroomScene() {
     }
     else if (event.type === 'error') setBeamState('idle');
   }, []);
+
+  // Derive cloud state and star intensity from beam state
+  const cloudState: CloudState = useMemo(() => {
+    switch (beamState) {
+      case 'collaboration': return 'collaboration';
+      case 'processing': return 'processing';
+      case 'success': return 'success';
+      default: return 'idle';
+    }
+  }, [beamState]);
+
+  const starIntensity = useMemo(() => {
+    return beamState === 'collaboration' ? 1.0 : beamState === 'processing' ? 0.4 : 0;
+  }, [beamState]);
 
   const handleStreamUpdate = useCallback((agentId: AgentId, content: string, done: boolean) => {
     setTvStreamContent(content);
@@ -125,7 +139,7 @@ export default function BedroomScene() {
           <directionalLight position={[-4, 6, 2]} intensity={0.6} color="#e0e8ff" />
           <hemisphereLight args={['#87ceeb', '#c4a882', 0.4]} />
 
-          <Room beamState={beamState} />
+          <Room beamState={beamState} cloudState={cloudState} starIntensity={starIntensity} />
           <NeuralTV
             focusTarget={focusTarget}
             beamState={beamState}
