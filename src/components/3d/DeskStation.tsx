@@ -109,20 +109,30 @@ function MonitorSetup({ index, beamState }: { index: number; beamState: BeamStat
 function AIModel({ modelPath, index }: { modelPath: string; index: number }) {
   const { scene } = useGLTF(modelPath);
   const modelRef = useRef<THREE.Group>(null);
+  const clonedScene = useMemo(() => scene.clone(), [scene]);
+  
+  // Compute bounding box to place model flush on desk surface (y=0.78)
+  const yOffset = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const minY = box.min.y;
+    // Desk surface is at 0.78 (0.75 + half of 0.06 thickness)
+    // We need to shift the model up so its bottom sits on 0.78
+    return 0.78 - minY * 0.35; // account for scale
+  }, [clonedScene]);
 
   useFrame(({ clock }) => {
     if (modelRef.current) {
       const t = clock.getElapsedTime();
-      modelRef.current.position.y = 0.78 + Math.sin(t * 1.5 + index) * 0.02;
+      modelRef.current.position.y = yOffset + Math.sin(t * 1.5 + index) * 0.02;
       modelRef.current.rotation.y = Math.sin(t * 0.3 + index * 2) * 0.1;
     }
   });
 
   return (
-    <group ref={modelRef} position={[0, 0.78, 0.05]}>
-      <primitive object={scene.clone()} scale={0.35} />
-      {/* Ground shadow/glow */}
-      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    <group ref={modelRef} position={[0, yOffset, 0.05]}>
+      <primitive object={clonedScene} scale={0.35} />
+      {/* Ground shadow */}
+      <mesh position={[0, -(yOffset - 0.78 + 0.01), 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.2, 32]} />
         <meshStandardMaterial
           color="#000000"
