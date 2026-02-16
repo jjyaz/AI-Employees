@@ -1,12 +1,16 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { BeamState, FocusTarget } from '../BedroomScene';
+import type { AgentId, AgentEvent } from '@/lib/agents';
 
 interface NeuralTVProps {
   focusTarget: FocusTarget;
   beamState: BeamState;
+  streamContent?: string;
+  streamDone?: boolean;
+  agentEvents?: AgentEvent[];
+  primaryAgent?: AgentId | null;
 }
 
 // AI-specific screen color schemes
@@ -17,7 +21,10 @@ const AI_COLORS: Record<string, { primary: string; secondary: string; bg: string
   desk4: { primary: '#8b5cf6', secondary: '#a78bfa', bg: '#140c1c' }, // Raspberry Pi - purple network
 };
 
-function TVVisualization({ focusTarget, beamState }: { focusTarget: FocusTarget; beamState: BeamState }) {
+function TVVisualization({ focusTarget, beamState, streamContent, streamDone, agentEvents }: {
+  focusTarget: FocusTarget; beamState: BeamState;
+  streamContent?: string; streamDone?: boolean; agentEvents?: AgentEvent[];
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
@@ -41,18 +48,22 @@ function TVVisualization({ focusTarget, beamState }: { focusTarget: FocusTarget;
 
     ctx.clearRect(0, 0, w, h);
 
-    const isCollective = focusTarget === 'overview';
-    const isTask = beamState !== 'idle';
-
-    if (isCollective && isTask) {
-      // Collective Neural Mode
-      drawCollectiveMode(ctx, w, h, t, beamState);
-    } else if (!isCollective) {
-      // Individual AI visualization
-      drawIndividualMode(ctx, w, h, t, focusTarget);
+    // If we have streaming content, show it as live telemetry
+    if (streamContent && !streamDone) {
+      drawStreamingMode(ctx, w, h, t, streamContent, agentEvents);
+    } else if (streamContent && streamDone) {
+      drawResultMode(ctx, w, h, t, streamContent);
     } else {
-      // Idle overview - subtle ambient
-      drawIdleMode(ctx, w, h, t);
+      const isCollective = focusTarget === 'overview';
+      const isTask = beamState !== 'idle';
+
+      if (isCollective && isTask) {
+        drawCollectiveMode(ctx, w, h, t, beamState);
+      } else if (!isCollective) {
+        drawIndividualMode(ctx, w, h, t, focusTarget);
+      } else {
+        drawIdleMode(ctx, w, h, t);
+      }
     }
 
     textureRef.current.needsUpdate = true;
@@ -69,6 +80,64 @@ function TVVisualization({ focusTarget, beamState }: { focusTarget: FocusTarget;
   ) : (
     <meshStandardMaterial color="#111" />
   );
+}
+
+function drawStreamingMode(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, content: string, events?: any[]) {
+  ctx.fillStyle = '#080c18';
+  ctx.fillRect(0, 0, w, h);
+
+  // Header
+  ctx.fillStyle = 'rgba(59, 130, 246, 0.6)';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('● LIVE AGENT OUTPUT', w / 2, 18);
+
+  // Event timeline on left
+  if (events && events.length > 0) {
+    ctx.textAlign = 'left';
+    ctx.font = '8px monospace';
+    const recent = events.slice(-5);
+    recent.forEach((ev, i) => {
+      const alpha = 0.3 + (i / 5) * 0.5;
+      ctx.fillStyle = `rgba(139, 92, 246, ${alpha})`;
+      ctx.fillText(`▸ ${ev.label}`, 10, 35 + i * 14);
+    });
+  }
+
+  // Streaming text content
+  ctx.textAlign = 'left';
+  ctx.font = '9px monospace';
+  const lines = content.split('\n').slice(-12);
+  lines.forEach((line, i) => {
+    const alpha = 0.4 + (i / 12) * 0.5;
+    ctx.fillStyle = `rgba(200, 220, 255, ${alpha})`;
+    ctx.fillText(line.slice(0, 60), 10, 110 + i * 14);
+  });
+
+  // Cursor blink
+  const cursorAlpha = Math.sin(t * 5) > 0 ? 0.8 : 0;
+  ctx.fillStyle = `rgba(59, 130, 246, ${cursorAlpha})`;
+  ctx.fillRect(10, h - 18, 6, 10);
+  ctx.textAlign = 'start';
+}
+
+function drawResultMode(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, content: string) {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.6)';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('✓ TASK COMPLETE', w / 2, 18);
+
+  ctx.textAlign = 'left';
+  ctx.font = '9px monospace';
+  const lines = content.split('\n').slice(0, 16);
+  lines.forEach((line, i) => {
+    ctx.fillStyle = 'rgba(200, 220, 255, 0.7)';
+    ctx.fillText(line.slice(0, 60), 10, 40 + i * 14);
+  });
+  ctx.textAlign = 'start';
 }
 
 function drawIdleMode(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
@@ -431,7 +500,7 @@ function drawCollectiveMode(ctx: CanvasRenderingContext2D, w: number, h: number,
   ctx.textAlign = 'start';
 }
 
-export function NeuralTV({ focusTarget, beamState }: NeuralTVProps) {
+export function NeuralTV({ focusTarget, beamState, streamContent, streamDone, agentEvents, primaryAgent }: NeuralTVProps) {
   const backlightRef = useRef<THREE.PointLight>(null);
   const frameGlowRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -476,7 +545,7 @@ export function NeuralTV({ focusTarget, beamState }: NeuralTVProps) {
       {/* Screen */}
       <mesh position={[0, 0, 0.045]}>
         <planeGeometry args={[4.2, 2.3]} />
-        <TVVisualization focusTarget={focusTarget} beamState={beamState} />
+        <TVVisualization focusTarget={focusTarget} beamState={beamState} streamContent={streamContent} streamDone={streamDone} agentEvents={agentEvents} />
       </mesh>
 
       {/* LED backlight glow */}

@@ -166,3 +166,49 @@
   font-family: 'Orbitron', sans-serif;
   color: hsl(var(--muted-foreground) / 0.4);
 }
+
+.onboarding-card {
+  @apply relative p-5 rounded-xl cursor-pointer transition-all duration-300 overflow-hidden;
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border) / 0.3);
+}
+.onboarding-card:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--border) / 0.5);
+}
+
+.task-console-panel {
+  background: hsl(var(--card) / 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px hsl(var(--background) / 0.5);
+}
+
+.connections-panel {
+  background: hsl(var(--card) / 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px hsl(var(--background) / 0.6);
+}
+
+.top-bar-btn {
+  @apply flex items-center px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase cursor-pointer transition-all duration-200;
+  font-family: 'Orbitron', sans-serif;
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.3);
+  color: hsl(var(--muted-foreground));
+}
+.top-bar-btn:hover {
+  background: hsl(var(--card) / 0.85);
+  border-color: hsl(var(--neural-blue) / 0.4);
+  color: hsl(var(--foreground));
+}
+.top-bar-btn-active {
+  background: hsl(var(--neural-blue) / 0.15);
+  border-color: hsl(var(--neural-blue) / 0.5);
+  color: hsl(var(--neural-blue));
+}
