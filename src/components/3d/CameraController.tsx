@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { FocusTarget } from '../BedroomScene';
 
-export type CameraMode = 'overview' | 'desk' | 'tv' | 'neural' | 'overhead';
+export type CameraMode = 'overview' | 'desk' | 'tv' | 'neural' | 'overhead' | 'wallart';
 
 interface CameraControllerProps {
   focusTarget: FocusTarget;
@@ -17,6 +17,7 @@ const PRESETS: Record<string, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   tv: { pos: new THREE.Vector3(0, 3.2, 3.5), target: new THREE.Vector3(0, 3.2, -5.5) },
   neural: { pos: new THREE.Vector3(4, 5.5, 4), target: new THREE.Vector3(0, 1, 0) },
   overhead: { pos: new THREE.Vector3(0, 9, 0.01), target: new THREE.Vector3(0, 0, 0) },
+  wallart: { pos: new THREE.Vector3(-2.5, 3.2, 0), target: new THREE.Vector3(-5.4, 3.2, 0) },
 };
 
 export function CameraController({ focusTarget, cameraMode, deskPositions }: CameraControllerProps) {
@@ -40,6 +41,11 @@ export function CameraController({ focusTarget, cameraMode, deskPositions }: Cam
     if (cameraMode === 'overhead') {
       targetPos.current.copy(PRESETS.overhead.pos);
       targetLookAt.current.copy(PRESETS.overhead.target);
+      return;
+    }
+    if (cameraMode === 'wallart') {
+      targetPos.current.copy(PRESETS.wallart.pos);
+      targetLookAt.current.copy(PRESETS.wallart.target);
       return;
     }
 

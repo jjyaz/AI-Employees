@@ -1,6 +1,6 @@
 import {
   RotateCcw, RotateCw, ChevronUp, ChevronDown,
-  ZoomIn, ZoomOut, Home, Crosshair, Monitor, Eye
+  ZoomIn, ZoomOut, Home, Crosshair, Monitor, Eye, Frame
 } from 'lucide-react';
 import type { CameraMode } from './3d/CameraController';
 
@@ -14,6 +14,7 @@ const controls = [
   { icon: Crosshair, label: 'Focus Center', mode: 'neural' as CameraMode },
   { icon: Monitor, label: 'Focus TV', mode: 'tv' as CameraMode },
   { icon: Eye, label: 'Overhead', mode: 'overhead' as CameraMode },
+  { icon: Frame, label: 'Wall Art', mode: 'wallart' as CameraMode },
 ];
 
 export function CameraControlPad({ onSetMode, currentMode }: CameraControlPadProps) {
