@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AGENTS, type AgentId } from '@/lib/agents';
+import { Copy, Check } from 'lucide-react';
 
 interface OnboardingOverlayProps {
   onSelect: (agentId: AgentId) => void;
@@ -7,7 +8,15 @@ interface OnboardingOverlayProps {
 
 export function OnboardingOverlay({ onSelect }: OnboardingOverlayProps) {
   const [hoveredAgent, setHoveredAgent] = useState<AgentId | null>(null);
+  const [copied, setCopied] = useState(false);
 
+  const contractAddress = '3c6xH5s8kmguofR83irmr5hmpxPZhiS8NYHhb2Sfpump';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(contractAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-xl">
       <a
@@ -87,6 +96,20 @@ export function OnboardingOverlay({ onSelect }: OnboardingOverlayProps) {
         <p className="text-center text-muted-foreground/40 text-[10px] mt-8 tracking-widest uppercase">
           You can change your primary agent anytime from the top bar
         </p>
+
+        <div className="flex items-center justify-center mt-4 gap-2">
+          <span className="text-muted-foreground/60 text-[10px] font-mono tracking-wider">CA:</span>
+          <code className="text-muted-foreground/80 text-[10px] font-mono bg-muted/30 px-2 py-1 rounded">
+            {contractAddress}
+          </code>
+          <button
+            onClick={handleCopy}
+            className="text-muted-foreground/60 hover:text-white transition-colors p-1"
+            title="Copy contract address"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
     </div>
   );
